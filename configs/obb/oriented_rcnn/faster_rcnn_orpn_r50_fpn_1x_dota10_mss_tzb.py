@@ -1,6 +1,6 @@
 _base_ = [
-    '../_base_/datasets/dota_mss_mst_tzb.py',
-    '../_base_/schedules/schedule_3x.py',
+    '../_base_/datasets/dota_mss_tzb.py',
+    '../_base_/schedules/schedule_1x.py',
     '../../_base_/default_runtime.py'
 ]
 

@@ -17,9 +17,9 @@
     "shown_btype": null,
     "shown_names": null,
     "score_thr": 0.2,
-    "colors": "green",
-    "thickness": 1.0,
+    "colors": "red",
+    "thickness": 6.0,
     "text_off": false,
-    "font_size": 10,
+    "font_size": 120,
     "wait_time": 0
 }
