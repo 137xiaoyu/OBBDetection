@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from argparse import ArgumentParser
 
 from BboxToolkit.geometry import bbox_overlaps
+import BboxToolkit as bt
+
 
 def intersection(g, p):
     g = np.asarray(g)
@@ -38,7 +40,7 @@ def eval_f1_oneclass(gt, det, thres):
     cur_max_val = 0
     for i in range(rows):
         for j in range(cols):
-            
+
             # print(1)
             # iou = intersection(det[i], gt[j])
             # itertools.chain.from_iterable(det[i])
@@ -188,23 +190,22 @@ def evaluate_two_jsons_with_different_confidence(label_json,predict_json,confide
 if __name__ =="__main__":
 
     parser = ArgumentParser()
-    parser.add_argument("--label_json",default="/dev3/fengjq/2grade/ship_class/data/raw_data/test/test.json")
-    parser.add_argument("--predict_json",default="/dev3/fengjq/2grade/ship_class/data/raw_data/test/ship_results.json")
-    parser.add_argument("--visual",default=None)
-    parser.add_argument("--img_input_dir",default='/dev3/fengjq/2grade/ship_class/data/raw_data/test/img/')
-    parser.add_argument("--img_output_dir",default='/dev3/fengjq/2grade/ship_class/data/raw_data/test/inference_result/')
+    parser.add_argument("--label_json",
+                        default="/dev3/fengjq/2grade/ship_class/data/raw_data/test/test.json")
+    parser.add_argument(
+        "--predict_json",
+        default="/dev3/fengjq/2grade/ship_class/data/raw_data/test/ship_results.json")
+    parser.add_argument("--visualize", default=False)
+    parser.add_argument("--img_input_dir",
+                        default='/dev3/fengjq/2grade/ship_class/data/raw_data/test/img/')
+    parser.add_argument(
+        "--img_output_dir",
+        default='/dev3/fengjq/2grade/ship_class/data/raw_data/test/inference_result/')
 
     args = parser.parse_args()
-    
+
     label_json = args.label_json
     predict_json = args.predict_json
-
-    # TODO: 增加可视化结果
-    if args.visual != None:
-        
-        print("visualization")
-
-
 
     # 计算评价指标
     precision_all = []
@@ -215,8 +216,8 @@ if __name__ =="__main__":
         precision_all.append(precision)
         recall_all.append(recall)
         F1_all.append(F1)
-    
-    
+
+
     mF1 = np.mean(F1_all)
     print("confidence   precision   recall  F1  ")
     precision_all.pop()
@@ -227,10 +228,81 @@ if __name__ =="__main__":
         precision_all.append(precision)
         recall_all.append(recall)
         F1_all.append(F1)
-    
+
     confidence_list =np.append(np.linspace(0.5,0.90,9),np.linspace(0.91,0.99,9))
     for i,(p,r,f1) in enumerate(zip(precision_all,recall_all,F1_all)):
         print('{:.2f}         {:.2f}        {:.2f}    {:.2f}'.format(confidence_list[i],p[0],r[0],f1[0]))
     print("mF1 = {}".format(mF1))
 
-    
+    # visualize
+    if args.visualize:
+        # load json
+        with open(label_json, 'r') as f:
+            gts_raw = json.load(f)
+        with open(predict_json, 'r') as f:
+            preds_raw = json.load(f)
+
+        # extract bboxes, categories, scores
+        gts, preds, image_names = {}, {}, []
+        for gt, pred in zip(gts_raw, preds_raw):
+            image_names.append(gt['image_name'])
+
+            # process ground truth
+            gt_bboxes, gt_categories = [], []
+            for gt_instance in gt['labels']:
+                gt_bboxes.append(np.array(gt_instance['points']).reshape(-1))
+                gt_categories.append(classes.index(gt_instance['category_id']))
+
+            gt_bboxes = np.vstack(gt_bboxes)
+            gt_categories = np.array(gt_categories)
+            gts[gt['image_name']] = (gt_bboxes, gt_categories)
+
+            # process prediction
+            pred_bboxes, pred_categories, pred_scores = [], [], []
+            for pred_instance in pred['labels']:
+                pred_bboxes.append(np.array(pred_instance['points']).reshape(-1))
+                pred_categories.append(classes.index(pred_instance['category_id']))
+                pred_scores.append(pred_instance['confidence'])
+
+            pred_bboxes = np.vstack(pred_bboxes)
+            pred_categories = np.array(pred_categories)
+            pred_scores = np.array(pred_scores)
+            preds[pred['image_name']] = (pred_bboxes, pred_categories, pred_scores)
+
+        if not os.path.exists(args.img_output_dir):
+            os.makedirs(args.img_output_dir)
+
+        # draw bboxes
+        print('Draw image results!!')
+        for i, image_name in enumerate(image_names):
+            print(f'Processing {i + 1}/{len(image_names)}')
+            gt_bboxes, gt_categories = gts[image_name]
+            pred_bboxes, pred_categories, pred_scores = preds[image_name]
+
+            img = cv2.imread(os.path.join(args.img_input_dir, image_name))
+            img = bt.imshow_bboxes(img,
+                                   pred_bboxes,
+                                   pred_categories,
+                                   pred_scores,
+                                   class_names=classes,
+                                   colors='red',
+                                   thickness=6,
+                                   font_size=120,
+                                   win_name='',
+                                   show=False,
+                                   wait_time=0,
+                                   out_file=None)
+            img = bt.imshow_bboxes(img,
+                                   gt_bboxes,
+                                   gt_categories,
+                                   None,
+                                   class_names=classes,
+                                   colors='green',
+                                   thickness=6,
+                                   font_size=120,
+                                   win_name='',
+                                   show=False,
+                                   wait_time=0,
+                                   out_file=None)
+
+            cv2.imwrite(os.path.join(args.img_output_dir, image_name), img)
