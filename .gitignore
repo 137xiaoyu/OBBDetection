@@ -123,3 +123,8 @@ work_dirs*
 
 # vim
 *.swp
+
+# custom
+fjq_work_space/*.png
+mmcv
+mmclassification

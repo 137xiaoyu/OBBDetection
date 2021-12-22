@@ -20,6 +20,9 @@ def main():
     args = parser.parse_args()
 
     # build the model from a config file and a checkpoint file
+    print(args.config)
+    print(args.checkpoint)
+    print(args.device)
     model = init_detector(args.config, args.checkpoint, device=args.device)
     # test a single image
     nms_cfg = dict(type='BT_nms', iou_thr=0.5)
@@ -29,6 +32,7 @@ def main():
     # show_result_pyplot(model, args.img, result, score_thr=args.score_thr)
     img = model.show_result(args.img, result, score_thr=args.score_thr, show=False)
     mmcv.imwrite(img, 'demo/' + 'dota_demo_result.png')
+
 
 
 if __name__ == '__main__':
