@@ -207,12 +207,14 @@ if __name__ =="__main__":
     label_json = args.label_json
     predict_json = args.predict_json
 
+    iou_thr = 0.1
+
     # 计算评价指标
     precision_all = []
     recall_all = []
     F1_all = []
     for i in np.linspace(0.5,0.95,10):
-        precision, recall, F1 = evaluate_two_jsons_with_different_confidence(label_json, predict_json,i,0.5)
+        precision, recall, F1 = evaluate_two_jsons_with_different_confidence(label_json, predict_json,i,iou_thr)
         precision_all.append(precision)
         recall_all.append(recall)
         F1_all.append(F1)
@@ -224,7 +226,7 @@ if __name__ =="__main__":
     recall_all.pop()
     F1_all.pop()
     for i in np.linspace(0.91,0.99,9):
-        precision, recall, F1 = evaluate_two_jsons_with_different_confidence(label_json, predict_json,i,0.5)
+        precision, recall, F1 = evaluate_two_jsons_with_different_confidence(label_json, predict_json,i,iou_thr)
         precision_all.append(precision)
         recall_all.append(recall)
         F1_all.append(F1)
@@ -259,15 +261,19 @@ if __name__ =="__main__":
 
             # process prediction
             pred_bboxes, pred_categories, pred_scores = [], [], []
-            for pred_instance in pred['labels']:
-                pred_bboxes.append(np.array(pred_instance['points']).reshape(-1))
-                pred_categories.append(classes.index(pred_instance['category_id']))
-                pred_scores.append(pred_instance['confidence'])
+            if len(pred['labels']) == 0:
+                preds[pred['image_name']] = ([], [], [])
+            else:
 
-            pred_bboxes = np.vstack(pred_bboxes)
-            pred_categories = np.array(pred_categories)
-            pred_scores = np.array(pred_scores)
-            preds[pred['image_name']] = (pred_bboxes, pred_categories, pred_scores)
+                for pred_instance in pred['labels']:
+                    pred_bboxes.append(np.array(pred_instance['points']).reshape(-1))
+                    pred_categories.append(classes.index(pred_instance['category_id']))
+                    pred_scores.append(pred_instance['confidence'])
+
+                pred_bboxes = np.vstack(pred_bboxes)
+                pred_categories = np.array(pred_categories)
+                pred_scores = np.array(pred_scores)
+                preds[pred['image_name']] = (pred_bboxes, pred_categories, pred_scores)
 
         if not os.path.exists(args.img_output_dir):
             os.makedirs(args.img_output_dir)
@@ -279,19 +285,21 @@ if __name__ =="__main__":
             gt_bboxes, gt_categories = gts[image_name]
             pred_bboxes, pred_categories, pred_scores = preds[image_name]
 
+
             img = cv2.imread(os.path.join(args.img_input_dir, image_name))
-            img = bt.imshow_bboxes(img,
-                                   pred_bboxes,
-                                   pred_categories,
-                                   pred_scores,
-                                   class_names=classes,
-                                   colors='red',
-                                   thickness=6,
-                                   font_size=120,
-                                   win_name='',
-                                   show=False,
-                                   wait_time=0,
-                                   out_file=None)
+            if len(pred_bboxes) != 0:
+                img = bt.imshow_bboxes(img,
+                                    pred_bboxes,
+                                    pred_categories,
+                                    pred_scores,
+                                    class_names=classes,
+                                    colors='red',
+                                    thickness=6,
+                                    font_size=120,
+                                    win_name='',
+                                    show=False,
+                                    wait_time=0,
+                                    out_file=None)
             img = bt.imshow_bboxes(img,
                                    gt_bboxes,
                                    gt_categories,

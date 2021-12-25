@@ -66,9 +66,16 @@ def main():
                 for index in range(bbox_result.shape[0]):
                     # 利用分类的confidence代替原结果
                     # print(0)
-                    lt_x,lt_y,rb_x,rb_y = bt.obb2hbb(bbox_result[0,:-1])
+                    lt_x,lt_y,rb_x,rb_y = bt.obb2hbb(bbox_result[index,:-1])
+                    if lt_x > big_img.shape[1] or lt_y > big_img.shape[0] or rb_x <0 or rb_y<0 :
+                        continue
+                    lt_x = max(lt_x,0)
+                    lt_y = max(lt_y,0)
+                    rb_x = min(rb_x,big_img.shape[1])
+                    rb_y = min(rb_y,big_img.shape[0])
                     crop_img = big_img[int(lt_y):int(rb_y),int(lt_x):int(rb_x),:]
                     # cv2.imwrite('/dev3/fengjq/2grade/OBBDetection/test.png',crop_img)
+                    # print(crop_img.shape)
                     crop_img = cv2.resize(crop_img,(crop_img_size,crop_img_size))
                     result = inference_model(model_cls, crop_img)
                     if result['pred_class'] == 'background':
@@ -76,7 +83,7 @@ def main():
                     else:
                         bbox_result[index, 5] = result['pred_score']
                     if bbox_result[index, 5] > threshold:
-                        x1,y1,x2,y2,x3,y3,x4,y4 = bt.obb2poly(bbox_result[0,:-1])
+                        x1,y1,x2,y2,x3,y3,x4,y4 = bt.obb2poly(bbox_result[index,:-1])
                         points = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
                         category_id = classes[class_id]
                         confidence = bbox_result[index, 5]

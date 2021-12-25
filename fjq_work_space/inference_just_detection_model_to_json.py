@@ -54,7 +54,7 @@ def main():
             if bbox_result.shape[0] != 0:
                 for index in range(bbox_result.shape[0]):
                     if bbox_result[index, 5] > threshold:
-                        x1,y1,x2,y2,x3,y3,x4,y4 = bt.obb2poly(bbox_result[0,:-1])
+                        x1,y1,x2,y2,x3,y3,x4,y4 = bt.obb2poly(bbox_result[index,:-1])
                         points = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
                         category_id = classes[class_id]
                         confidence = bbox_result[index, 5]
